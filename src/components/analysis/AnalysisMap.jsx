@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, useMap, FeatureGroup, Polygon, Tooltip } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
-import { Layers, Plus, Minus, Play, Box, CheckCircle, AlertTriangle, ShieldCheck, Radar } from 'lucide-react';
+import { Layers, Plus, Minus, Play, Box, CheckCircle, AlertTriangle, ShieldCheck, Radar, Crosshair } from 'lucide-react';
 import L from 'leaflet';
 
 import 'leaflet/dist/leaflet.css';
@@ -39,9 +39,9 @@ const INVERTED_AOI_MASK = [
   MARGALLA_HILLS_AOI
 ];
 
-// Initial Pakistan Overview Center & Zoom (broad initial view before animating to AOI)
-const INITIAL_OVERVIEW_CENTER = [30.3753, 69.3451];
-const INITIAL_OVERVIEW_ZOOM = 6;
+// Direct Margalla Hills AOI Center & Zoom (focused immediately on opening)
+const MARGALLA_HILLS_CENTER = [33.7438, 73.0228];
+const MARGALLA_HILLS_ZOOM = 12;
 
 // Ray-casting Point-In-Polygon calculation
 function isPointInPolygon(point, polygon) {
@@ -73,7 +73,7 @@ function checkPolygonInsideAOI(latLngs, aoiPolygon) {
   });
 }
 
-function MapController({ setZoom, is3DMode, setErrorMessage, setAoiStatus, drawnLayersCount, setIsDrawingActive, isAnalyzing }) {
+function MapController({ setZoom, is3DMode, setIs3DMode, setErrorMessage, setAoiStatus, drawnLayersCount, setIsDrawingActive, isAnalyzing }) {
   const map = useMap();
   const isDrawingActiveRef = useRef(false);
   const wasAnalyzingRef = useRef(false);
@@ -83,17 +83,12 @@ function MapController({ setZoom, is3DMode, setErrorMessage, setAoiStatus, drawn
     if (hasInitializedRef.current) return;
     hasInitializedRef.current = true;
 
-    // Initial animation: briefly shows complete map, then smoothly flies into Margalla Hills AOI bounds
-    const timer = setTimeout(() => {
-      const bounds = L.latLngBounds(MARGALLA_HILLS_AOI);
-      map.flyToBounds(bounds, {
-        duration: 2.2,
-        padding: [15, 15],
-        maxZoom: 13
-      });
-    }, 700);
-
-    return () => clearTimeout(timer);
+    // Immediately fit map bounds cleanly to Margalla Hills AOI
+    const bounds = L.latLngBounds(MARGALLA_HILLS_AOI);
+    map.fitBounds(bounds, {
+      padding: [25, 25],
+      maxZoom: 13
+    });
   }, [map]);
 
   // Track Leaflet.draw drawing and editing events to dynamically toggle intercept bypass
@@ -101,6 +96,10 @@ function MapController({ setZoom, is3DMode, setErrorMessage, setAoiStatus, drawn
     const handleDrawStart = () => {
       isDrawingActiveRef.current = true;
       setIsDrawingActive(true);
+      // Auto-switch to 2D mode so mouse click coordinates map 1:1 without 3D rotation distortion
+      if (setIs3DMode) {
+        setIs3DMode(false);
+      }
     };
     const handleDrawStop = () => {
       isDrawingActiveRef.current = false;
@@ -124,7 +123,7 @@ function MapController({ setZoom, is3DMode, setErrorMessage, setAoiStatus, drawn
       map.off('draw:deletestart', handleDrawStart);
       map.off('draw:deletestop', handleDrawStop);
     };
-  }, [map, setIsDrawingActive]);
+  }, [map, setIsDrawingActive, setIs3DMode]);
 
   // Direct click zoom locking on Leaflet.draw toolbar buttons
   useEffect(() => {
@@ -132,6 +131,7 @@ function MapController({ setZoom, is3DMode, setErrorMessage, setAoiStatus, drawn
     const handleToolbarClick = (e) => {
       const btn = e.target.closest('.leaflet-draw-draw-polygon, .leaflet-draw-draw-rectangle');
       if (btn) {
+        if (setIs3DMode) setIs3DMode(false);
         // Explicitly set view centered at Margalla Hills with zoom level 14 to cover 100% container screen
         map.setView([33.7438, 73.0228], 14, { animate: false });
       }
@@ -141,7 +141,7 @@ function MapController({ setZoom, is3DMode, setErrorMessage, setAoiStatus, drawn
     return () => {
       container.removeEventListener('click', handleToolbarClick, true);
     };
-  }, [map]);
+  }, [map, setIs3DMode]);
 
   // Reset Mode: Automatically reset map view to standard overview bounds when analysis finishes
   useEffect(() => {
@@ -155,69 +155,6 @@ function MapController({ setZoom, is3DMode, setErrorMessage, setAoiStatus, drawn
     }
     wasAnalyzingRef.current = isAnalyzing;
   }, [isAnalyzing, map]);
-
-  // Real-time Drawing Restriction Interceptor
-  useEffect(() => {
-    const container = map.getContainer();
-
-    // Intercepts clicks in DOM Capture Phase BEFORE Leaflet Draw receives the event
-    const handleCaptureClick = (e) => {
-      // If drawing tool is active, temporarily ignore/bypass click blocking
-      if (isDrawingActiveRef.current) {
-        return;
-      }
-
-      // Check if click is on map UI controls (widgets/toolbar), allow UI control clicks
-      if (e.target && (e.target.closest('.map-controls-widget') || e.target.closest('.leaflet-control-toolbar') || e.target.closest('.map-top-header'))) {
-        return;
-      }
-
-      const latlng = map.mouseEventToLatLng(e);
-      const isInside = isPointInPolygon([latlng.lat, latlng.lng], MARGALLA_HILLS_AOI);
-
-      if (!isInside) {
-        // Block vertex placement immediately!
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        e.preventDefault();
-
-        setAoiStatus('invalid');
-        setErrorMessage('You can only draw inside the Area of Interest.');
-        setTimeout(() => {
-          setErrorMessage('');
-          setAoiStatus(drawnLayersCount > 0 ? 'valid' : 'idle');
-        }, 3000);
-      }
-    };
-
-    // Real-time cursor feedback when hovering outside AOI
-    const handleMouseMove = (e) => {
-      // Ignore boundary constraints if drawing is active
-      if (isDrawingActiveRef.current) {
-        container.style.cursor = '';
-        return;
-      }
-
-      const latlng = map.mouseEventToLatLng(e);
-      const isInside = isPointInPolygon([latlng.lat, latlng.lng], MARGALLA_HILLS_AOI);
-      if (!isInside) {
-        container.style.cursor = 'not-allowed';
-      } else {
-        container.style.cursor = '';
-      }
-    };
-
-    container.addEventListener('click', handleCaptureClick, true);
-    container.addEventListener('mousedown', handleCaptureClick, true);
-    container.addEventListener('mousemove', handleMouseMove, false);
-
-    return () => {
-      container.removeEventListener('click', handleCaptureClick, true);
-      container.removeEventListener('mousedown', handleCaptureClick, true);
-      container.removeEventListener('mousemove', handleMouseMove, false);
-      container.style.cursor = '';
-    };
-  }, [map, setErrorMessage, setAoiStatus, drawnLayersCount]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -235,20 +172,32 @@ function MapController({ setZoom, is3DMode, setErrorMessage, setAoiStatus, drawn
   return null;
 }
 
-export default function AnalysisMap({ targetRef }) {
-  const [zoom, setZoom] = useState(INITIAL_OVERVIEW_ZOOM);
+export default function AnalysisMap({ targetRef, onRunAnalysis, isAnalyzing: externalIsAnalyzing = false }) {
+  const [zoom, setZoom] = useState(MARGALLA_HILLS_ZOOM);
   const [coords, setCoords] = useState({ lat: '33.7438', lng: '73.0228' });
   const [mapInstance, setMapInstance] = useState(null);
   const [drawnLayers, setDrawnLayers] = useState([]);
   
+  // Re-center directly on Margalla Hills AOI
+  const handleResetView = () => {
+    if (mapInstance) {
+      const bounds = L.latLngBounds(MARGALLA_HILLS_AOI);
+      mapInstance.flyToBounds(bounds, { duration: 1.2, padding: [25, 25] });
+      setCoords({ lat: '33.7438', lng: '73.0228' });
+    }
+  };
+  
   // 2D / 3D Mode Toggle State
   const [is3DMode, setIs3DMode] = useState(false);
+
+  // Map Tile Type: 'satellite' | 'terrain' | 'street'
+  const [mapType, setMapType] = useState('satellite');
 
   // Active drawing state
   const [isDrawingActive, setIsDrawingActive] = useState(false);
 
   // LiDAR Scanning state
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const isAnalyzing = externalIsAnalyzing;
 
   // AOI validation status: 'idle' | 'valid' | 'invalid'
   const [aoiStatus, setAoiStatus] = useState('idle');
@@ -257,17 +206,28 @@ export default function AnalysisMap({ targetRef }) {
   const handleRunAnalysis = () => {
     if (isAnalyzing) return;
 
-    setIsAnalyzing(true);
-
-    // Realistic LiDAR Satellite Analysis Scan duration (~2.8 seconds)
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      
-      // Smoothly scroll down to Visual Drift section
-      if (targetRef && targetRef.current) {
-        targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    let payloadCoords = MARGALLA_HILLS_AOI;
+    if (drawnLayers && drawnLayers.length > 0) {
+      let raw = drawnLayers[0];
+      // Robustly unwrap Leaflet nested array structures [[LatLng, LatLng, ...]]
+      while (Array.isArray(raw) && raw.length > 0 && Array.isArray(raw[0])) {
+        raw = raw[0];
       }
-    }, 2800);
+      if (Array.isArray(raw) && raw.length > 0) {
+        payloadCoords = raw.map(pt => {
+          if (pt && typeof pt === 'object') {
+            const lat = pt.lat !== undefined ? pt.lat : pt[0];
+            const lng = pt.lng !== undefined ? pt.lng : pt[1];
+            return [Number(lat), Number(lng)];
+          }
+          return pt;
+        });
+      }
+    }
+
+    if (onRunAnalysis) {
+      onRunAnalysis(payloadCoords);
+    }
   };
 
   const handleZoomIn = () => mapInstance && mapInstance.zoomIn();
@@ -354,24 +314,50 @@ export default function AnalysisMap({ targetRef }) {
       {/* Top Controls Row */}
       <div className="map-top-header">
         
-        {/* Left Side: 2D vs 3D Mode Toggle Switch */}
-        <div className="view-mode-toggle">
-          <button 
-            type="button"
-            className={`mode-btn ${!is3DMode ? 'active' : ''}`}
-            onClick={() => setIs3DMode(false)}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            2D View
-          </button>
-          <button 
-            type="button"
-            className={`mode-btn ${is3DMode ? 'active' : ''}`}
-            onClick={() => setIs3DMode(true)}
-          >
-            <Box className="w-3.5 h-3.5" />
-            3D Mode
-          </button>
+        {/* Left Side: 2D vs 3D Mode & Map Type Toggle Switches */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="view-mode-toggle">
+            <button 
+              type="button"
+              className={`mode-btn ${!is3DMode ? 'active' : ''}`}
+              onClick={() => setIs3DMode(false)}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              2D View
+            </button>
+            <button 
+              type="button"
+              className={`mode-btn ${is3DMode ? 'active' : ''}`}
+              onClick={() => setIs3DMode(true)}
+            >
+              <Box className="w-3.5 h-3.5" />
+              3D Mode
+            </button>
+          </div>
+
+          <div className="view-mode-toggle">
+            <button 
+              type="button"
+              className={`mode-btn ${mapType === 'satellite' ? 'active' : ''}`}
+              onClick={() => setMapType('satellite')}
+            >
+              Satellite
+            </button>
+            <button 
+              type="button"
+              className={`mode-btn ${mapType === 'terrain' ? 'active' : ''}`}
+              onClick={() => setMapType('terrain')}
+            >
+              Terrain
+            </button>
+            <button 
+              type="button"
+              className={`mode-btn ${mapType === 'street' ? 'active' : ''}`}
+              onClick={() => setMapType('street')}
+            >
+              Street
+            </button>
+          </div>
         </div>
 
         {/* Right Side: Run Analysis Button */}
@@ -402,18 +388,35 @@ export default function AnalysisMap({ targetRef }) {
       <div className={`map-workspace ${is3DMode ? 'map-workspace-3d' : ''} ${isAnalyzing ? 'workspace-scanning' : ''} ${isDrawingActive ? 'drawing-active' : ''}`}>
         
         <MapContainer 
-          center={INITIAL_OVERVIEW_CENTER} 
+          center={MARGALLA_HILLS_CENTER} 
           zoom={zoom} 
           style={{ height: '100%', width: '100%' }}
           zoomControl={false}
+          scrollWheelZoom={true}
+          dragging={true}
+          touchZoom={true}
           doubleClickZoom={false}
           ref={setMapInstance}
         >
-          {/* Main Esri Satellite Base Tile Layer */}
-          <TileLayer
-            attribution='Tiles &copy; Esri &mdash; Satellite'
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          />
+          {/* Dynamic Base Tile Layer based on selected Map Type */}
+          {mapType === 'satellite' && (
+            <TileLayer
+              attribution='Tiles &copy; Esri &mdash; Satellite'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            />
+          )}
+          {mapType === 'terrain' && (
+            <TileLayer
+              attribution='Tiles &copy; Esri &mdash; Topographic'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+            />
+          )}
+          {mapType === 'street' && (
+            <TileLayer
+              attribution='&copy; OpenStreetMap contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          )}
 
           {/* 3D Elevation & Hillshade Overlay when 3D Mode is active */}
           {is3DMode && (
@@ -493,6 +496,7 @@ export default function AnalysisMap({ targetRef }) {
           <MapController 
             setZoom={setZoom} 
             is3DMode={is3DMode} 
+            setIs3DMode={setIs3DMode}
             setErrorMessage={setErrorMessage}
             setAoiStatus={setAoiStatus}
             drawnLayersCount={drawnLayers.length}
@@ -554,6 +558,9 @@ export default function AnalysisMap({ targetRef }) {
 
         {/* Right Side Navigation Widgets */}
         <div className="map-controls-widget">
+          <button type="button" onClick={handleResetView} className="widget-btn" title="Focus Margalla Hills AOI">
+            <Crosshair className="w-5 h-5 text-emerald-600" />
+          </button>
           <button type="button" onClick={handleZoomIn} className="widget-btn" title="Zoom In">
             <Plus className="w-5 h-5 text-gray-700" />
           </button>

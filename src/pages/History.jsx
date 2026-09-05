@@ -332,7 +332,15 @@ export default function History() {
                   
                   {/* Embedded Visual Drift Component */}
                   <div className="expand-section-block">
-                    <VisualDrift forestPercentage={forestPct} />
+                    <VisualDrift 
+                      forestPercentage={forestPct} 
+                      deforestedPercentage={record.deforestedPercentage || record.deforestation_percentage}
+                      beforeImage={record.before_image || record.beforeImage || null}
+                      afterImage={record.after_image || record.afterImage || null}
+                      overlayImage={record.overlay_image || record.overlayImage || record.image || null}
+                      startYear={record.dateRange?.startYear || "2020"}
+                      endYear={record.dateRange?.endYear || "2024"}
+                    />
                   </div>
 
                   {/* Detection Logs Table Component inside Expanded Card */}

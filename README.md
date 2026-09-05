@@ -1,70 +1,68 @@
-# Getting Started with Create React App
+# 🌿 GreenGuard: AI-Powered Deforestation Detection & Monitoring System (Frontend)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+[![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC.svg)](https://tailwindcss.com/)
+[![Leaflet](https://img.shields.io/badge/Leaflet-1.9-green.svg)](https://leafletjs.com/)
 
-## Available Scripts
+The official frontend web application for **GreenGuard**, an AI-powered bi-temporal satellite deforestation detection and environmental analysis platform.
 
-In the project directory, you can run:
+Built to seamlessly interface with the [GreenGuard Backend & Geospatial AI Engine](https://github.com/bilalfarid-1/deforestation-project).
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 🚀 Key Features
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+1. **Interactive Geospatial Study Area (Margalla Hills AOI)**:
+   - Built on Leaflet with dynamic layer switching (`Satellite`, `Terrain`, `Street`).
+   - 3D terrain elevation hillshade support with auto-flattening during polygon drawing.
+   - Restored smooth mouse/touch dragging, pan navigation, and instant AOI boundary framing.
 
-### `npm test`
+2. **Visual Drift Temporal Comparison**:
+   - High-fidelity interactive before/after image slider.
+   - Displays genuine high-resolution bitemporal satellite orthomosaics ($T_1$ baseline vs $T_2$ current).
+   - Luminous crimson alert overlay showing AI-detected deforestation clusters.
+   - Formatted decimal percentage metrics (`Number.toFixed(1)`).
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+3. **Historical Analysis Records**:
+   - Audit trail of past scans with persisted satellite before/after imagery, canopy delta statistics, and localized sub-sector risk scores (`Critical`, `Warning`, `Stable`).
 
-### `npm run build`
+4. **Environmental Watchdog & Community Hub**:
+   - Community forum with category filters, thread discussions, and official environmental authority complaint reporting.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 🛠️ Quickstart
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-### `npm run eject`
+### 2. Launch Development Server
+```bash
+npm start
+```
+Runs the application at `http://localhost:3000`.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Make sure the backend is active at `http://localhost:5000` (from `deforestation-project`).
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 📖 System Architecture & Integration Guide
+For the complete technical breakdown of how the frontend, backend, and PyTorch deep learning models communicate—along with post-mortems of resolved integration bugs—see [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md).
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## 👥 Project Team & Contributions
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+| Member | Focus Area | Technical Deliverables |
+| :--- | :--- | :--- |
+| **Bilal Farid** | Full-Stack Integration & Geospatial ML Engineering | • Built Node.js/TypeScript backend API<br>• Real-time Esri satellite mosaic tile pipeline<br>• ML inference optimization & timeout resolution<br>• Frontend map drag, AOI framing, & visual drift bug fixes |
+| **Ayesha** | Deep Learning Model Training & Weights | • Trained Attention U-Net & U-Net++ neural networks<br>• Model weight optimization (`attn_unet_best.pth`, `unetpp_best.pth`) |
+| **Mahnoor** | ML Research & Training Pipeline | • Jupyter training notebooks, band preprocessing, and loss functions |
+| **Waniah** | Frontend Development & UI/UX | • React application architecture (`green-guard`)<br>• UI layout, report dashboards, and page navigation |
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 🛡️ License
+MIT License. Built for environmental protection and sustainable forest management.

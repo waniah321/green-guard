@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X, BookmarkPlus, Check, Sparkles } from 'lucide-react';
 
-export default function SaveReportModal({ isOpen, onClose, onSave }) {
+export default function SaveReportModal({ isOpen, onClose, onSave, forestPercentage = 94 }) {
   const [reportName, setReportName] = useState('Margalla Hills Canopy Delta Report');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -79,7 +79,7 @@ export default function SaveReportModal({ isOpen, onClose, onSave }) {
             </div>
             <div className="save-meta-row">
               <span className="save-meta-label">Forest Canopy</span>
-              <span className="save-meta-val text-emerald-400">94% Healthy</span>
+              <span className="save-meta-val text-emerald-400">{forestPercentage}% Healthy</span>
             </div>
             <div className="save-meta-row">
               <span className="save-meta-label">Timestamp</span>

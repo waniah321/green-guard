@@ -2,9 +2,30 @@
 import React from 'react';
 import { Activity } from 'lucide-react';
 
-export default function VisualDrift({ forestPercentage = 94 }) {
-  const deforestedPercentage = 100 - forestPercentage;
-  const strokeDashoffset = 226.08 - (226.08 * forestPercentage) / 100;
+export default function VisualDrift({
+  forestPercentage = 94,
+  deforestedPercentage: customDefor = null,
+  beforeImage = null,
+  afterImage = null,
+  overlayImage = null,
+  startYear = "2020",
+  endYear = "2024"
+}) {
+  const cleanForestPct = Number(Number(forestPercentage).toFixed(1));
+  const cleanDeforPct = customDefor !== null 
+    ? Number(Number(customDefor).toFixed(1)) 
+    : Number((100 - cleanForestPct).toFixed(1));
+  const strokeDashoffset = 226.08 - (226.08 * cleanForestPct) / 100;
+
+  const formatImgSrc = (img, fallback) => {
+    if (!img) return fallback;
+    if (img.startsWith('data:') || img.startsWith('http')) return img;
+    return `data:image/png;base64,${img}`;
+  };
+
+  const defaultBefore = "https://media.istockphoto.com/id/2226686330/photo/dense-green-forest-with-communication-tower-and-nearby-buildings-in-daylight.webp?a=1&b=1&s=612x612&w=0&k=20&c=TeYNhvH80XeIeZpx_PAqGf_5WjpU2T3yeOzexbZmlzw=";
+  const defaultAfter = "https://plus.unsplash.com/premium_photo-1666626225781-ea37a9d43d40?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTd8fGRlZm9yZXN0YXRpb24lMjBzYXRlbGxpdGUlMjB2aWV3fGVufDB8fDB8fHww";
+  const defaultOverlay = "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&q=80&w=600";
 
   return (
     <div className="visual-drift-section">
@@ -22,33 +43,33 @@ export default function VisualDrift({ forestPercentage = 94 }) {
 
       <div className="visual-drift-grid">
         
-        {/* Card 1: 2020 Baseline */}
+        {/* Card 1: Baseline */}
         <div>
-          <span className="drift-card-label">Visual Drift: 2020 Baseline</span>
+          <span className="drift-card-label">Visual Drift: {startYear} Baseline</span>
           <div className="drift-card-body">
             <div className="drift-img-wrapper">
               <img 
-                src="https://media.istockphoto.com/id/2226686330/photo/dense-green-forest-with-communication-tower-and-nearby-buildings-in-daylight.webp?a=1&b=1&s=612x612&w=0&k=20&c=TeYNhvH80XeIeZpx_PAqGf_5WjpU2T3yeOzexbZmlzw=" 
-                alt="Forest Canopy 2020" 
+                src={formatImgSrc(beforeImage, defaultBefore)} 
+                alt={`Forest Canopy ${startYear}`} 
                 className="drift-img" 
               />
-              <span className="drift-img-tag">2020 BASELINE</span>
+              <span className="drift-img-tag">{startYear} BASELINE</span>
             </div>
             <span className="drift-card-footer-text">deep delta analysis</span>
           </div>
         </div>
 
-        {/* Card 2: 2024 Current */}
+        {/* Card 2: Current */}
         <div>
-          <span className="drift-card-label">Visual Drift: 2024 Current</span>
+          <span className="drift-card-label">Visual Drift: {endYear} Current</span>
           <div className="drift-card-body">
             <div className="drift-img-wrapper">
               <img 
-                src="https://plus.unsplash.com/premium_photo-1666626225781-ea37a9d43d40?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTd8fGRlZm9yZXN0YXRpb24lMjBzYXRlbGxpdGUlMjB2aWV3fGVufDB8fDB8fHww" 
-                alt="Forest Degradation 2024" 
+                src={formatImgSrc(afterImage, defaultAfter)} 
+                alt={`Forest Degradation ${endYear}`} 
                 className="drift-img" 
               />
-              <span className="drift-img-tag drift-img-tag-red">2024 CURRENT</span>
+              <span className="drift-img-tag drift-img-tag-red">{endYear} CURRENT</span>
             </div>
             <span className="drift-card-footer-text">deep delta analysis</span>
           </div>
@@ -60,13 +81,13 @@ export default function VisualDrift({ forestPercentage = 94 }) {
           <div className="drift-card-body">
             <div className="drift-img-wrapper" style={{ position: 'relative' }}>
               <img 
-                src="https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&q=80&w=600" 
+                src={formatImgSrc(overlayImage, defaultOverlay)} 
                 alt="Analysis Delta" 
                 className="drift-img" 
               />
               <span className="drift-img-tag drift-img-tag-red">FINAL DELTA</span>
               <div className="overlay-top-right">
-                IM-02: 2024 Current (Original)
+                {endYear} Current Delta
               </div>
               <div className="overlay-bottom-left">
                 <span className="overlay-danger-span">Major Pixel Difference</span>
@@ -99,7 +120,7 @@ export default function VisualDrift({ forestPercentage = 94 }) {
                   />
                 </svg>
                 <div className="donut-center-text">
-                  <span className="donut-percentage">{forestPercentage}%</span>
+                  <span className="donut-percentage">{cleanForestPct}%</span>
                   <span className="donut-label">Healthy</span>
                 </div>
               </div>
@@ -107,11 +128,11 @@ export default function VisualDrift({ forestPercentage = 94 }) {
               <div className="chart-legends">
                 <div className="legend-item">
                   <span className="legend-dot legend-dot-green"></span>
-                  <span className="legend-text">Forest ({forestPercentage}%)</span>
+                  <span className="legend-text">Forest ({cleanForestPct}%)</span>
                 </div>
                 <div className="legend-item">
                   <span className="legend-dot legend-dot-red"></span>
-                  <span className="legend-text">Deforested ({deforestedPercentage}%)</span>
+                  <span className="legend-text">Deforested ({cleanDeforPct}%)</span>
                 </div>
               </div>
             </div>
